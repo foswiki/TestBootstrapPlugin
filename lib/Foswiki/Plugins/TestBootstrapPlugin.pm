@@ -16,6 +16,8 @@ use warnings;
 use Foswiki::Func    ();    # The plugins API
 use Foswiki::Plugins ();    # For the API version
 use Cwd qw( abs_path );
+use File::Basename;
+
 use constant TRAUTO => 1;
 
 our $VERSION = '1.0';
@@ -78,7 +80,7 @@ sub _workOutOS {
 sub _BOOTSTRAP {
     my ( $session, $params, $topic, $web, $topicObject ) = @_;
 
-    my $msg;
+    my $msg = "<blockquote><verbatim>\n";
 
     # Try to repair $boot_cfg to a minimal configuration,
     # using paths and URLs relative to this request. If URL
@@ -98,8 +100,8 @@ sub _BOOTSTRAP {
       "AUTOCONFIG: Found Bin dir: $bin, Script name: $script using FindBin\n"
       if (TRAUTO);
 
-    $boot_cfg{ScriptSuffix} = ( $script =~ /(\.[^.]*)$/ ) ? $1 : '';
-    $msg .= "AUTOCONFIG: Found SCRIPT SUFFIX $boot_cfg{ScriptSuffix} \n"
+    $boot_cfg{ScriptSuffix} = ( fileparse( $script, qr/\.[^.]*/ ) )[2];
+    print STDERR "AUTOCONFIG: Found SCRIPT SUFFIX $boot_cfg{ScriptSuffix} \n"
       if ( TRAUTO && $boot_cfg{ScriptSuffix} );
 
     my $protocol = $ENV{HTTPS} ? 'https' : 'http';
@@ -242,7 +244,6 @@ EPITAPH
     # is no localisation in a default cfg derived from Foswiki.spec
     $msg .= <<BOOTS;
 
-
  *WARNING !LocalSite.cfg could not be found, or failed to load.* This
 Foswiki is running using a bootstrap configuration worked
 out by detecting the layout of the installation. Any requests made to this
@@ -251,26 +252,55 @@ to make changes! You should either:
    * correct any permissions problems with an existing !LocalSite.cfg (see the webserver error logs for details), or
    * visit [[%SCRIPTURL{configure}%?VIEWPATH=$boot_cfg{ScriptUrlPaths}{view}][configure]] as soon as possible to generate a new one.
 
-
 BOOTS
 
     require Data::Dumper;
-    $msg .= Data::Dumper::Dumper( \%boot_cfg );
 
-    $msg .= "\nACTUAL CONFIGURATION:\n\n";
+    #$msg .= Data::Dumper::Dumper( \%boot_cfg );
 
-    foreach my $key (
-        sort qw( DataDir ScriptDir ToolsDir PubDir
-        PubUrlPath ScriptUrlPath DetailedOS ScriptSuffix OS
-        DefaultUrlHost TemplateDir WorkingDir LocalesDir )
-      )
-    {
+    $msg .= "</verbatim>\n";
+    $msg .= "<noautolink>\n";
+    $msg .= "| *Key* | *Current* | *Bootstrap* |\n";
 
-        $msg .= "$key: $Foswiki::cfg{$key}\n";
+    foreach my $key ( sort keys %boot_cfg ) {
+
+        # SMELL: Not very pretty
+        if ( ref( $boot_cfg{$key} ) eq 'HASH' ) {
+            foreach my $k2 ( keys %{ $boot_cfg{$key} } ) {
+                my $cur =
+                  ( defined $Foswiki::cfg{$key}{$k2} )
+                  ? $Foswiki::cfg{$key}{$k2}
+                  : '(undefined)';
+                $cur =
+                  ( length $Foswiki::cfg{$key}{$k2} )
+                  ? $Foswiki::cfg{$key}{$k2}
+                  : '(empty)';
+                my $boot =
+                  ( defined $boot_cfg{$key}{$k2} )
+                  ? $boot_cfg{$key}{$k2}
+                  : '(undefined)';
+                $boot =
+                  ( length $boot_cfg{$key}{$k2} )
+                  ? $boot_cfg{$key}{$k2}
+                  : '(empty)';
+                $msg .= "| ={$key}{$k2}= | =$cur= | =$boot= |\n";
+            }
+            next;
+        }
+        else {
+            my $cur =
+              ( defined $Foswiki::cfg{$key} )
+              ? $Foswiki::cfg{$key}
+              : '(undefined)';
+            $cur =
+              ( length $Foswiki::cfg{$key} ) ? $Foswiki::cfg{$key} : '(empty)';
+            my $boot =
+              ( defined $boot_cfg{$key} ) ? $boot_cfg{$key} : '(undefined)';
+            $boot = ( length $boot_cfg{$key} ) ? $boot_cfg{$key} : '(empty)';
+            $msg .= "| =$key= | =$cur= | =$boot= |\n";
+        }
     }
-    $msg .= "{ScriptUrlPaths}{view}: $Foswiki::cfg{ScriptUrlPaths}{view}\n";
-
-    return "<verbatim>$msg</verbatim>";
+    return "$msg</noautolink></blockquote>\n";
 
 }
 1;
