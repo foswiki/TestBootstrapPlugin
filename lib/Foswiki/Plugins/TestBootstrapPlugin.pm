@@ -39,7 +39,8 @@ sub initPlugin {
         return 0;
     }
 
-    Foswiki::Func::registerTagHandler( 'BOOTSTRAP', \&_BOOTSTRAP );
+    Foswiki::Func::registerTagHandler( 'BOOTSTRAP', \&_BOOTSTRAP )
+      if ( Foswiki::Func::isAnAdmin() );
 
     # Plugin correctly initialized
     return 1;

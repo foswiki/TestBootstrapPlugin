@@ -21,6 +21,7 @@ a single BOOTSTRAP macro which reports what would have been auto configured
 had this been a 1.2 system running without LocalSite.cfg
 
 Please send the following bootstrap report to the foswiki developers:
+*This report is only available to administrators*
 
 %BOOTSTRAP%
 
