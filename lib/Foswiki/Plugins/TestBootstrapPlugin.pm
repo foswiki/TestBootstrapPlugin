@@ -225,7 +225,7 @@ sub _BOOTSTRAP {
         }
     }
     if ($fatal) {
-       $msg .= <<EPITAPH;
+        $msg .= <<EPITAPH;
 Unable to bootstrap configuration. LocalSite.cfg could not be loaded,
 and Foswiki was unable to guess the locations of the following critical
 directories: $fatal
@@ -256,7 +256,20 @@ BOOTS
     require Data::Dumper;
     $msg .= Data::Dumper::Dumper( \%boot_cfg );
 
-    return "<verbatim> $msg </verbatim>";
+    $msg .= "\nACTUAL CONFIGURATION:\n\n";
+
+    foreach my $key (
+        sort qw( DataDir ScriptDir ToolsDir PubDir
+        PubUrlPath ScriptUrlPath DetailedOS ScriptSuffix OS
+        DefaultUrlHost TemplateDir WorkingDir LocalesDir )
+      )
+    {
+
+        $msg .= "$key: $Foswiki::cfg{$key}\n";
+    }
+    $msg .= "{ScriptUrlPaths}{view}: $Foswiki::cfg{ScriptUrlPaths}{view}\n";
+
+    return "<verbatim>$msg</verbatim>";
 
 }
 1;
