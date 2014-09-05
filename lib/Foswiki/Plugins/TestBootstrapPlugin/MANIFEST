@@ -1,6 +1,4 @@
 !noci
 data/System/TestBootstrapPlugin.txt 0644 Documentation page
-data/System/VarEXAMPLETAG.txt 0644 Tag documentation
-data/Sandbox/PluginTestTestBootstrapPlugin.txt 0644 Examples
 lib/Foswiki/Plugins/TestBootstrapPlugin.pm 0444 Perl module
-lib/Foswiki/Plugins/TestBootstrapPlugin/Config.spec 0444 Configuration
+
