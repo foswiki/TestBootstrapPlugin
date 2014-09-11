@@ -2,7 +2,7 @@
 <!--
    * Set SHORTDESCRIPTION = %$SHORTDESCRIPTION%
 -->
----+!! Empty Plugin
+---+!! Test Bootstrap Plugin
 
 %SHORTDESCRIPTION%
 
