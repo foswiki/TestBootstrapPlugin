@@ -9,7 +9,7 @@
 
 %TOC%
 
-This plugin runs the new Bootstrap code developed for Foswiki 1.2.  It
+This plugin runs the new configuration Bootstrap code developed for Foswiki 1.2.  It
 generates a report describing the settings that this feature will generate.
 
 The Bootstrap code allows foswiki to run in a minimal configuration without
@@ -20,6 +20,10 @@ This report will help us make sure foswiki runs "out of the box" on the widest
 variety of systems.  This plugin has no settings or preferences and implements
 a single BOOTSTRAP macro which reports what would have been auto configured
 had this been a 1.2 system running without LocalSite.cfg
+
+This has been tested on 1.0.9, 1.1.9 and 1.2 alpha.   It uses the real 1.2 bootstrap
+code on 1.2-alpha,  and a local copy of the bootstrap code when running on
+1.1.x.
 
 Please send the following bootstrap report to the foswiki developers:
 *This report is only available to administrators*
