@@ -35,6 +35,7 @@ sub tear_down {
 sub fixture_groups {
 
     return (
+        [ 'Suffix', 'Nosuffix', ],
         [ 'FullURLs', 'ShortURLs', 'MinimumURLs' ],
         [ 'HTTP',     'HTTPS', ],
         [ 'Apache',   'Lighttpd', ],
@@ -43,12 +44,12 @@ sub fixture_groups {
 
 sub ShortURLs {
     my $this = shift;
-    $this->{url}     = "short";
-    $this->{host}    = "mysite.com";
-    $this->{script}  = "/foswiki";
-    $this->{viewURL} = "/foswiki/Main/WebHome";
-    $this->{editURL} = "/foswiki/bin/edit/Main/WebHome";
-    $this->{pubURL}  = "/foswiki/pub/System/Somefile.txt";
+    $this->{url}      = "short";
+    $this->{host}     = "mysite.com";
+    $this->{script}   = "/foswiki";
+    $this->{viewURL}  = "/foswiki/Main/WebHome";
+    $this->{pathinfo} = "/Main/WebHome";
+    $this->{pubURL}   = "/foswiki/pub/System/Somefile.txt";
 
     $this->{PubUrlPath}        = '/foswiki/pub';
     $this->{ScriptUrlPath}     = '/foswiki/bin';
@@ -63,7 +64,7 @@ sub MinimumURLs {
     $this->{host}       = "mysite.com";
     $this->{viewURL}    = "/Main/WebHome";
     $this->{script}     = "";
-    $this->{editURL}    = "/bin/edit/Main/WebHome";
+    $this->{pathinfo}   = "/Main/WebHome";
     $this->{pubURL}     = "/pub/System/Somefile.txt";
     $this->{PubUrlPath} = '/pub';
 
@@ -107,15 +108,31 @@ sub HTTPS {
 #$ENV{SERVER_NAME} = foswiki.fenachrone.com
 #$ENV{SERVER_PORT} = 80
 
-sub FullURLs {
-
+sub Suffix {
     my $this = shift;
-    $this->{url}     = "full";
-    $this->{host}    = "mysite.com";
-    $this->{script}  = "/foswiki/bin/view";
-    $this->{viewURL} = "/foswiki/bin/view/Main/WebHome";
-    $this->{editURL} = "/foswiki/bin/edit/Main/WebHome";
-    $this->{pubURL}  = "/foswiki/pub/System/Somefile.txt";
+
+    $this->{suffix} = '.pl';
+
+    return;
+}
+
+sub Nosuffix {
+    my $this = shift;
+
+    $this->{suffix} = '';
+
+    return;
+}
+
+sub FullURLs {
+    my $this = shift;
+
+    $this->{url}      = "full";
+    $this->{host}     = "mysite.com";
+    $this->{script}   = "/foswiki/bin/view" . $this->{suffix};
+    $this->{viewURL}  = "/foswiki/bin/view$this->{suffix}/Main/WebHome";
+    $this->{pathinfo} = "/Main/WebHome";
+    $this->{pubURL}   = "/foswiki/pub/System/Somefile.txt";
 
     $this->{PubUrlPath}        = '/foswiki/bin/../pub';
     $this->{ScriptUrlPath}     = '/foswiki/bin';
@@ -134,6 +151,7 @@ sub Apache {
         SCRIPT_URI  => $this->{protocol} . $this->{host} . $this->{viewURL},
         SCRIPT_URL  => $this->{viewURL},
         SCRIPT_NAME => $this->{script},
+        PATH_INFO   => $this->{pathinfo},
     };
     return;
 }
@@ -147,7 +165,8 @@ sub Lighttpd {
         REQUEST_URI => $this->{viewURL},
         SCRIPT_URI  => $this->{protocol} . $this->{host} . $this->{viewURL},
         SCRIPT_URL  => $this->{viewURL},
-        SCRIPT_NAME => 'bin/view',   # Script name is always present in Lighttpd
+        SCRIPT_NAME => '/bin/view',  # Script name is always present in Lighttpd
+        PATH_INFO => $this->{pathinfo},
     };
 
     return;
@@ -167,21 +186,23 @@ sub verify_Test_Bootstrap {
         my $log;
         open STDERR, '>', \$log;
 
-        ( $boot_cfg, $resp ) = _runBootstrap(0);
+        ( $boot_cfg, $resp ) = $this->_runBootstrap(0);
         close STDERR;
         $msg .= $resp . "\n\n";
         $msg .= $log;
     }
 
     #print STDERR "BOOTSTRAP RETURNS:\n $msg\n";
-
     #print STDERR Data::Dumper::Dumper( \$boot_cfg );
 
     $this->assert_str_equals( $this->{PubUrlPath}, $boot_cfg->{PubUrlPath} );
     $this->assert_str_equals( $this->{ScriptUrlPath},
         $boot_cfg->{ScriptUrlPath} );
-    $this->assert_str_equals( $this->{ViewScriptUrlPath},
-        $boot_cfg->{ScriptUrlPaths}{view} );
+    my $suffix = ( $this->{url} eq 'full' ) ? $this->{suffix} : '';
+    $this->assert_str_equals(
+        $this->{ViewScriptUrlPath} . $suffix,
+        $boot_cfg->{ScriptUrlPaths}{view}
+    );
 
     return;
 }
@@ -200,7 +221,7 @@ sub verify_Core_Bootstrap {
         my $log;
         open STDERR, '>', \$log;
 
-        ( $boot_cfg, $resp ) = _runBootstrap(1);
+        ( $boot_cfg, $resp ) = $this->_runBootstrap(1);
         close STDERR;
         $msg .= $resp . "\n\n";
         $msg .= $log;
@@ -213,8 +234,11 @@ sub verify_Core_Bootstrap {
     $this->assert_str_equals( $this->{PubUrlPath}, $boot_cfg->{PubUrlPath} );
     $this->assert_str_equals( $this->{ScriptUrlPath},
         $boot_cfg->{ScriptUrlPath} );
-    $this->assert_str_equals( $this->{ViewScriptUrlPath},
-        $boot_cfg->{ScriptUrlPaths}{view} );
+    my $suffix = ( $this->{url} eq 'full' ) ? $this->{suffix} : '';
+    $this->assert_str_equals(
+        $this->{ViewScriptUrlPath} . $suffix,
+        $boot_cfg->{ScriptUrlPaths}{view}
+    );
 
     return;
 }
@@ -293,7 +317,9 @@ sub verify_Core_Bootstrap {
 sub _again { return; }
 
 sub _runBootstrap {
+    my $this     = shift;
     my $coreTest = shift;
+
     local %Foswiki::cfg = ( Engine => $Foswiki::cfg{Engine} );
     my $msg;
 
@@ -302,7 +328,7 @@ sub _runBootstrap {
     *FindBin::again = \&_again;
     use warnings 'redefine';
     $FindBin::Bin    = '/var/www/foswiki/distro/core/bin';
-    $FindBin::Script = 'view';
+    $FindBin::Script = 'view' . $this->{suffix};
 
     if ( $coreTest && Foswiki::Configure::Load->can('bootstrapConfig') ) {
         $msg = Foswiki::Configure::Load::bootstrapConfig(1);

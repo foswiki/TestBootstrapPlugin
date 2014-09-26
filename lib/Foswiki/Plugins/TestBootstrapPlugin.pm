@@ -185,6 +185,8 @@ sub _bootstrapConfig {
       if ( TRAUTO && $Foswiki::cfg{ScriptSuffix} );
 
     my $protocol = $ENV{HTTPS} ? 'https' : 'http';
+
+    # Figure out the DefaultUrlHost
     if ( $ENV{HTTP_HOST} ) {
         $Foswiki::cfg{DefaultUrlHost} = "$protocol://$ENV{HTTP_HOST}";
         print STDERR
@@ -216,67 +218,40 @@ sub _bootstrapConfig {
 # and then recovers it.  When the jsonrpc script is called to save the configuration
 # it then has the VIEWPATH parameter available.  If "view" was never called during
 # configuration, then it will not be set correctly.
-    print STDERR "AUTOCONFIG: REQUEST_URI is $ENV{REQUEST_URI} \n";
+    print STDERR "AUTOCONFIG: REQUEST_URI is $ENV{REQUEST_URI} \n" if (TRAUTO);
+    print STDERR "AUTOCONFIG: PATH_INFO   is $ENV{PATH_INFO} \n"   if (TRAUTO);
 
-    if ( $ENV{SCRIPT_NAME} ) {
-        print STDERR "AUTOCONFIG: Found SCRIPT $ENV{SCRIPT_NAME} \n"
-          if (TRAUTO);
+    # Determine the prefix of the script part of the URI.
+    my $pfx = '';
+    if ( my $idx = index( $ENV{REQUEST_URI}, $ENV{PATH_INFO} ) ) {
+        $pfx = substr( $ENV{REQUEST_URI}, 0, $idx );
+    }
+    print STDERR "AUTOCONFIG: URI Prefix is $pfx\n";
 
-        if ( $ENV{SCRIPT_NAME} =~ m{^(.*?)/$script(\b|$)} ) {
+    # We don't use the SCRIPT_NAME,  but report it anyway for debugging
+    print STDERR "AUTOCONFIG: Found SCRIPT $ENV{SCRIPT_NAME} \n"
+      if ( TRAUTO && $ENV{SCRIPT_NAME} );
 
-            if ( index $ENV{REQUEST_URI}, $ENV{SCRIPT_NAME} eq 0 ) {
-                print STDERR
-"          : SCRIPT_NAME $ENV{SCRIPT_NAME} fully contained in REQUEST_URI $ENV{REQUEST_URI}\n";
+    # Work out the URL path for Short and standard URLs
+    if ( $ENV{REQUEST_URI} =~ m{^(.*?)/$script(\b|$)} ) {
+        print STDERR
+"AUTOCONFIG: SCRIPT $script fully contained in REQUEST_URI $ENV{REQUEST_URI}, Not short URLs\n";
 
-                # Conventional URLs   with path and script
-                $Foswiki::cfg{ScriptUrlPath} = $1;
-                $Foswiki::cfg{ScriptUrlPaths}{view} =
-                  $1 . '/view' . $Foswiki::cfg{ScriptSuffix};
+        # Conventional URLs   with path and script
+        $Foswiki::cfg{ScriptUrlPath} = $1;
+        $Foswiki::cfg{ScriptUrlPaths}{view} =
+          $1 . '/view' . $Foswiki::cfg{ScriptSuffix};
 
-                # This might not work, depending on the websrver config,
-                # but it's the best we can do
-                $Foswiki::cfg{PubUrlPath} = "$1/../pub";
-            }
-            else {
-                my @parts = split( '/', $1 );
-                my $path = '';
-                foreach my $part (@parts) {
-                    next unless $part;
-                    print STDERR
-                      "Testing $ENV{REQUEST_URI} for $path/$part index: "
-                      . index( $ENV{REQUEST_URI}, "$path/$part" ) . "\n";
-                    if ( index( $ENV{REQUEST_URI}, "$path/$part" ) eq 0 ) {
-                        print STDERR "Found match ($part)\n";
-                        $path .= "/$part";
-                    }
-                    else {
-                        last;
-                    }
-                }
-                print STDERR
-                  "AUTOCONFIG: Found path, partial script match. short URLs \n"
-                  if (TRAUTO);
-                $Foswiki::cfg{ScriptUrlPath}        = $path . '/bin';
-                $Foswiki::cfg{ScriptUrlPaths}{view} = $path;
-                $Foswiki::cfg{PubUrlPath}           = $path . '/pub';
-            }
-        }
-        else {
-            # Short URLs but with a path
-            print STDERR "AUTOCONFIG: Found path, but no script. short URLs \n"
-              if (TRAUTO);
-            $Foswiki::cfg{ScriptUrlPath}        = $ENV{SCRIPT_NAME} . '/bin';
-            $Foswiki::cfg{ScriptUrlPaths}{view} = $ENV{SCRIPT_NAME};
-            $Foswiki::cfg{PubUrlPath}           = $ENV{SCRIPT_NAME} . '/pub';
-        }
+        # This might not work, depending on the websrver config,
+        # but it's the best we can do
+        $Foswiki::cfg{PubUrlPath} = "$1/../pub";
     }
     else {
-        #  No script, no path,  shortest URLs
-        print STDERR "AUTOCONFIG: No path, No script, probably shorter URLs \n"
+        print STDERR "AUTOCONFIG: Building Short URL paths using prefix \n"
           if (TRAUTO);
-        $Foswiki::cfg{ScriptUrlPaths}{view} = '';
-        $Foswiki::cfg{ScriptUrlPath}        = '/bin';
-        $Foswiki::cfg{PubUrlPath}           = '/pub';
+        $Foswiki::cfg{ScriptUrlPath}        = $pfx . '/bin';
+        $Foswiki::cfg{ScriptUrlPaths}{view} = $pfx;
+        $Foswiki::cfg{PubUrlPath}           = $pfx . '/pub';
     }
 
     if (TRAUTO) {
