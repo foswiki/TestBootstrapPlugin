@@ -68,8 +68,14 @@ sub _BOOTSTRAP {
         close STDERR;
         $msg .= $resp . "\n\n";
         $msg .= $log;
-        $msg .= "</verbatim><noautolink>\n";
     }
+
+    $msg .= "\n\n";
+    foreach my $ek ( sort keys %ENV ) {
+        $msg .= "\$ENV{$ek} = $ENV{$ek} \n";
+    }
+
+    $msg .= "</verbatim>\n\n<noautolink>\n";
     $msg .= "| *Key* | *Current* | *Bootstrap* |\n";
 
     foreach my $key ( sort keys %$boot_cfg ) {
@@ -210,20 +216,50 @@ sub _bootstrapConfig {
 # and then recovers it.  When the jsonrpc script is called to save the configuration
 # it then has the VIEWPATH parameter available.  If "view" was never called during
 # configuration, then it will not be set correctly.
+    print STDERR "AUTOCONFIG: REQUEST_URI is $ENV{REQUEST_URI} \n";
+
     if ( $ENV{SCRIPT_NAME} ) {
         print STDERR "AUTOCONFIG: Found SCRIPT $ENV{SCRIPT_NAME} \n"
           if (TRAUTO);
 
         if ( $ENV{SCRIPT_NAME} =~ m{^(.*?)/$script(\b|$)} ) {
 
-            # Conventional URLs   with path and script
-            $Foswiki::cfg{ScriptUrlPath} = $1;
-            $Foswiki::cfg{ScriptUrlPaths}{view} =
-              $1 . '/view' . $Foswiki::cfg{ScriptSuffix};
+            if ( index $ENV{REQUEST_URI}, $ENV{SCRIPT_NAME} eq 0 ) {
+                print STDERR
+"          : SCRIPT_NAME $ENV{SCRIPT_NAME} fully contained in REQUEST_URI $ENV{REQUEST_URI}\n";
 
-            # This might not work, depending on the websrver config,
-            # but it's the best we can do
-            $Foswiki::cfg{PubUrlPath} = "$1/../pub";
+                # Conventional URLs   with path and script
+                $Foswiki::cfg{ScriptUrlPath} = $1;
+                $Foswiki::cfg{ScriptUrlPaths}{view} =
+                  $1 . '/view' . $Foswiki::cfg{ScriptSuffix};
+
+                # This might not work, depending on the websrver config,
+                # but it's the best we can do
+                $Foswiki::cfg{PubUrlPath} = "$1/../pub";
+            }
+            else {
+                my @parts = split( '/', $1 );
+                my $path = '';
+                foreach my $part (@parts) {
+                    next unless $part;
+                    print STDERR
+                      "Testing $ENV{REQUEST_URI} for $path/$part index: "
+                      . index( $ENV{REQUEST_URI}, "$path/$part" ) . "\n";
+                    if ( index( $ENV{REQUEST_URI}, "$path/$part" ) eq 0 ) {
+                        print STDERR "Found match ($part)\n";
+                        $path .= "/$part";
+                    }
+                    else {
+                        last;
+                    }
+                }
+                print STDERR
+                  "AUTOCONFIG: Found path, partial script match. short URLs \n"
+                  if (TRAUTO);
+                $Foswiki::cfg{ScriptUrlPath}        = $path . '/bin';
+                $Foswiki::cfg{ScriptUrlPaths}{view} = $path;
+                $Foswiki::cfg{PubUrlPath}           = $path . '/pub';
+            }
         }
         else {
             # Short URLs but with a path
