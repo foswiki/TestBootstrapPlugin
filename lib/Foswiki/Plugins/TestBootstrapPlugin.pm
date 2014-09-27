@@ -180,6 +180,8 @@ sub _bootstrapConfig {
       if (TRAUTO);
 
     $Foswiki::cfg{ScriptSuffix} = ( fileparse( $script, qr/\.[^.]*/ ) )[2];
+    $Foswiki::cfg{ScriptSuffix} = ''
+      if ( $Foswiki::cfg{ScriptSuffix} eq '.fcgi' );
     print STDERR
       "AUTOCONFIG: Found SCRIPT SUFFIX $Foswiki::cfg{ScriptSuffix} \n"
       if ( TRAUTO && $Foswiki::cfg{ScriptSuffix} );
@@ -228,9 +230,15 @@ sub _bootstrapConfig {
     }
     print STDERR "AUTOCONFIG: URI Prefix is $pfx\n";
 
-    # We don't use the SCRIPT_NAME,  but report it anyway for debugging
-    print STDERR "AUTOCONFIG: Found SCRIPT $ENV{SCRIPT_NAME} \n"
+    # FCGI uses $ENV{SCRIPT_NAME} for the foswiki request, Fixup the scriptname
+    print STDERR "AUTOCONFIG: Found SCRIPT $ENV{SCRIPT_NAME}\n"
       if ( TRAUTO && $ENV{SCRIPT_NAME} );
+
+    if ( ( $script eq 'foswiki.fcgi' ) && $ENV{SCRIPT_NAME} ) {
+        $script = $ENV{SCRIPT_NAME};
+        print STDERR
+"AUTOCONFIGURE: FCGI active for $ENV{SCRIPT_NAME}, Set Script to $script \n";
+    }
 
     # Work out the URL path for Short and standard URLs
     if ( $ENV{REQUEST_URI} =~ m{^(.*?)/$script(\b|$)} ) {

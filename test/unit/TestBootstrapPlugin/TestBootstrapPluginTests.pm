@@ -38,18 +38,39 @@ sub fixture_groups {
         [ 'Suffix', 'Nosuffix', ],
         [ 'FullURLs', 'ShortURLs', 'MinimumURLs' ],
         [ 'HTTP',     'HTTPS', ],
-        [ 'Apache',   'Lighttpd', ],
+        [ 'Apache',   'Lighttpd',  'Nginx_fcgi', ],
     );
+}
+
+sub skip {
+    my ( $this, $test ) = @_;
+
+    my %skip_tests = (
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_FullURLs_HTTPS_Nginx_fcgi'
+          => 'FCGI does not use script suffixes',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_FullURLs_HTTP_Nginx_fcgi'
+          => 'FCGI does not use script suffixes',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_FullURLs_HTTPS_Nginx_fcgi'
+          => 'FCGI does not use script suffixes',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_FullURLs_HTTP_Nginx_fcgi'
+          => 'FCGI does not use script suffixes',
+    );
+
+    return $skip_tests{$test}
+      if ( defined $test && defined $skip_tests{$test} );
+
+    return undef;
 }
 
 sub ShortURLs {
     my $this = shift;
-    $this->{url}      = "short";
-    $this->{host}     = "mysite.com";
-    $this->{script}   = "/foswiki";
-    $this->{viewURL}  = "/foswiki/Main/WebHome";
-    $this->{pathinfo} = "/Main/WebHome";
-    $this->{pubURL}   = "/foswiki/pub/System/Somefile.txt";
+    $this->{url}       = "short";
+    $this->{host}      = "mysite.com";
+    $this->{script}    = "/foswiki";
+    $this->{binscript} = 'view';
+    $this->{viewURL}   = "/foswiki/Main/WebHome";
+    $this->{pathinfo}  = "/Main/WebHome";
+    $this->{pubURL}    = "/foswiki/pub/System/Somefile.txt";
 
     $this->{PubUrlPath}        = '/foswiki/pub';
     $this->{ScriptUrlPath}     = '/foswiki/bin';
@@ -64,6 +85,7 @@ sub MinimumURLs {
     $this->{host}       = "mysite.com";
     $this->{viewURL}    = "/Main/WebHome";
     $this->{script}     = "";
+    $this->{binscript}  = 'view';
     $this->{pathinfo}   = "/Main/WebHome";
     $this->{pubURL}     = "/pub/System/Somefile.txt";
     $this->{PubUrlPath} = '/pub';
@@ -88,26 +110,6 @@ sub HTTPS {
     return;
 }
 
-#    # Apache /bin/view    Full URLs
-#$ENV{HTTP_HOST} = foswiki.fenachrone.com
-#$ENV{HTTP_USER_AGENT} = Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Firefox/24.0
-#$ENV{PATH} = /usr/local/bin:/usr/bin:/bin
-#$ENV{PATH_INFO} = /System/TestBootstrapPlugin
-#$ENV{PATH_TRANSLATED} = /var/www/foswiki/distro/core/System/TestBootstrapPlugin
-#$ENV{QUERY_STRING} = validation_key=97ea6202eda01850bf86544236b10c75
-#$ENV{REMOTE_ADDR} = 127.0.0.1
-#$ENV{REMOTE_PORT} = 47007
-#$ENV{REQUEST_METHOD} = GET
-#$ENV{REQUEST_URI} = /bin/view/System/TestBootstrapPlugin?validation_key=97ea6202eda01850bf86544236b10c75
-#$ENV{SCRIPT_FILENAME} = /var/www/foswiki/distro/core/bin/view
-#$ENV{SCRIPT_NAME} = /bin/view
-#$ENV{SCRIPT_URI} = http://foswiki.fenachrone.com/bin/view/System/TestBootstrapPlugin
-#$ENV{SCRIPT_URL} = /bin/view/System/TestBootstrapPlugin
-#$ENV{SERVER_ADDR} = 127.0.0.1
-#$ENV{SERVER_ADMIN} = webmaster@foswiki.fenachrone.com
-#$ENV{SERVER_NAME} = foswiki.fenachrone.com
-#$ENV{SERVER_PORT} = 80
-
 sub Suffix {
     my $this = shift;
 
@@ -127,12 +129,13 @@ sub Nosuffix {
 sub FullURLs {
     my $this = shift;
 
-    $this->{url}      = "full";
-    $this->{host}     = "mysite.com";
-    $this->{script}   = "/foswiki/bin/view" . $this->{suffix};
-    $this->{viewURL}  = "/foswiki/bin/view$this->{suffix}/Main/WebHome";
-    $this->{pathinfo} = "/Main/WebHome";
-    $this->{pubURL}   = "/foswiki/pub/System/Somefile.txt";
+    $this->{url}       = "full";
+    $this->{host}      = "mysite.com";
+    $this->{script}    = "/foswiki/bin/view" . $this->{suffix};
+    $this->{binscript} = 'view';
+    $this->{viewURL}   = "/foswiki/bin/view$this->{suffix}/Main/WebHome";
+    $this->{pathinfo}  = "/Main/WebHome";
+    $this->{pubURL}    = "/foswiki/pub/System/Somefile.txt";
 
     $this->{PubUrlPath}        = '/foswiki/bin/../pub';
     $this->{ScriptUrlPath}     = '/foswiki/bin';
@@ -168,6 +171,23 @@ sub Lighttpd {
         SCRIPT_NAME => '/bin/view',  # Script name is always present in Lighttpd
         PATH_INFO => $this->{pathinfo},
     };
+
+    return;
+}
+
+sub Nginx_fcgi {
+    my $this = shift;
+
+    $this->{ENV} = {
+        HTTP_HOST   => $this->{host},
+        PATH_INFO   => $this->{viewURL},
+        REQUEST_URI => $this->{viewURL},
+        SCRIPT_URI  => $this->{protocol} . $this->{host} . $this->{viewURL},
+        SCRIPT_URL  => $this->{viewURL},
+        SCRIPT_NAME => 'view',
+        PATH_INFO   => $this->{pathinfo},
+    };
+    $this->{binscript} = 'foswiki.fcgi';
 
     return;
 }
@@ -242,6 +262,38 @@ sub verify_Core_Bootstrap {
 
     return;
 }
+sub _again { return; }
+
+sub _runBootstrap {
+    my $this     = shift;
+    my $coreTest = shift;
+
+    local %Foswiki::cfg = ( Engine => $Foswiki::cfg{Engine} );
+    my $msg;
+
+    no warnings 'redefine';
+    require FindBin;
+    *FindBin::again = \&_again;
+    use warnings 'redefine';
+    $FindBin::Bin    = '/var/www/foswiki/distro/core/bin';
+    $FindBin::Script = $this->{binscript} . $this->{suffix};
+
+    if ( $coreTest && Foswiki::Configure::Load->can('bootstrapConfig') ) {
+        $msg = Foswiki::Configure::Load::bootstrapConfig(1);
+    }
+    else {
+        $msg = Foswiki::Plugins::TestBootstrapPlugin::_bootstrapConfig(1);
+    }
+
+    $msg .= "\n\n";
+    foreach my $ek ( sort keys %ENV ) {
+        $msg .= "\$ENV{$ek} = $ENV{$ek} \n";
+    }
+
+    return ( \%Foswiki::cfg, $msg );
+}
+
+1;
 
 #   # lighttpd bin/configure
 #HTTP_HOST  lf117.fenachrone.com
@@ -314,38 +366,26 @@ sub verify_Core_Bootstrap {
 #SERVER_PORT = 80
 #SERVER_PROTOCOL = HTTP/1.1
 
-sub _again { return; }
+#    # Apache /bin/view    Full URLs
+#$ENV{HTTP_HOST} = foswiki.fenachrone.com
+#$ENV{HTTP_USER_AGENT} = Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Firefox/24.0
+#$ENV{PATH} = /usr/local/bin:/usr/bin:/bin
+#$ENV{PATH_INFO} = /System/TestBootstrapPlugin
+#$ENV{PATH_TRANSLATED} = /var/www/foswiki/distro/core/System/TestBootstrapPlugin
+#$ENV{QUERY_STRING} = validation_key=97ea6202eda01850bf86544236b10c75
+#$ENV{REMOTE_ADDR} = 127.0.0.1
+#$ENV{REMOTE_PORT} = 47007
+#$ENV{REQUEST_METHOD} = GET
+#$ENV{REQUEST_URI} = /bin/view/System/TestBootstrapPlugin?validation_key=97ea6202eda01850bf86544236b10c75
+#$ENV{SCRIPT_FILENAME} = /var/www/foswiki/distro/core/bin/view
+#$ENV{SCRIPT_NAME} = /bin/view
+#$ENV{SCRIPT_URI} = http://foswiki.fenachrone.com/bin/view/System/TestBootstrapPlugin
+#$ENV{SCRIPT_URL} = /bin/view/System/TestBootstrapPlugin
+#$ENV{SERVER_ADDR} = 127.0.0.1
+#$ENV{SERVER_ADMIN} = webmaster@foswiki.fenachrone.com
+#$ENV{SERVER_NAME} = foswiki.fenachrone.com
+#$ENV{SERVER_PORT} = 80
 
-sub _runBootstrap {
-    my $this     = shift;
-    my $coreTest = shift;
-
-    local %Foswiki::cfg = ( Engine => $Foswiki::cfg{Engine} );
-    my $msg;
-
-    no warnings 'redefine';
-    require FindBin;
-    *FindBin::again = \&_again;
-    use warnings 'redefine';
-    $FindBin::Bin    = '/var/www/foswiki/distro/core/bin';
-    $FindBin::Script = 'view' . $this->{suffix};
-
-    if ( $coreTest && Foswiki::Configure::Load->can('bootstrapConfig') ) {
-        $msg = Foswiki::Configure::Load::bootstrapConfig(1);
-    }
-    else {
-        $msg = Foswiki::Plugins::TestBootstrapPlugin::_bootstrapConfig(1);
-    }
-
-    $msg .= "\n\n";
-    foreach my $ek ( sort keys %ENV ) {
-        $msg .= "\$ENV{$ek} = $ENV{$ek} \n";
-    }
-
-    return ( \%Foswiki::cfg, $msg );
-}
-
-1;
 __END__
 
 Plugin for Foswiki - The Free and Open Source Wiki, http://foswiki.org/
