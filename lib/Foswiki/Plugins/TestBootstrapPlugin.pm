@@ -228,7 +228,7 @@ sub _bootstrapConfig {
     if ( my $idx = index( $ENV{REQUEST_URI}, $ENV{PATH_INFO} ) ) {
         $pfx = substr( $ENV{REQUEST_URI}, 0, $idx );
     }
-    print STDERR "AUTOCONFIG: URI Prefix is $pfx\n";
+    print STDERR "AUTOCONFIG: URI Prefix is $pfx\n" if (TRAUTO);
 
     # FCGI uses $ENV{SCRIPT_NAME} for the foswiki request, Fixup the scriptname
     print STDERR "AUTOCONFIG: Found SCRIPT $ENV{SCRIPT_NAME}\n"
@@ -237,13 +237,15 @@ sub _bootstrapConfig {
     if ( ( $script eq 'foswiki.fcgi' ) && $ENV{SCRIPT_NAME} ) {
         $script = $ENV{SCRIPT_NAME};
         print STDERR
-"AUTOCONFIGURE: FCGI active for $ENV{SCRIPT_NAME}, Set Script to $script \n";
+"AUTOCONFIGURE: FCGI active for $ENV{SCRIPT_NAME}, Set Script to $script \n"
+          if (TRAUTO);
     }
 
     # Work out the URL path for Short and standard URLs
     if ( $ENV{REQUEST_URI} =~ m{^(.*?)/$script(\b|$)} ) {
         print STDERR
-"AUTOCONFIG: SCRIPT $script fully contained in REQUEST_URI $ENV{REQUEST_URI}, Not short URLs\n";
+"AUTOCONFIG: SCRIPT $script fully contained in REQUEST_URI $ENV{REQUEST_URI}, Not short URLs\n"
+          if (TRAUTO);
 
         # Conventional URLs   with path and script
         $Foswiki::cfg{ScriptUrlPath} = $1;

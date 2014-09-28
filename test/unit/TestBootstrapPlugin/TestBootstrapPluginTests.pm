@@ -15,6 +15,16 @@ sub new {
 
 sub set_up {
     my $this = shift;
+
+    my @root = File::Spec->splitdir( $Foswiki::cfg{DataDir} );
+    pop(@root);
+
+    # SMELL: Force a trailing separator - Linux and Windows are inconsistent
+    my $root = File::Spec->catfile( @root, 'x' );
+    chop $root;
+    $root =~ s|\\|/|g;
+    $this->{rootdir} = $root;
+
     $this->SUPER::set_up();
 
 }
@@ -275,7 +285,7 @@ sub _runBootstrap {
     require FindBin;
     *FindBin::again = \&_again;
     use warnings 'redefine';
-    $FindBin::Bin    = '/var/www/foswiki/distro/core/bin';
+    $FindBin::Bin    = $this->{rootdir} . '/bin';
     $FindBin::Script = $this->{binscript} . $this->{suffix};
 
     if ( $coreTest && Foswiki::Configure::Load->can('bootstrapConfig') ) {
