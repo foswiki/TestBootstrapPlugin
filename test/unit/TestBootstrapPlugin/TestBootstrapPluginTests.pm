@@ -48,7 +48,8 @@ sub fixture_groups {
         [ 'Suffix', 'Nosuffix', ],
         [ 'FullURLs', 'ShortURLs', 'MinimumURLs' ],
         [ 'HTTP',     'HTTPS', ],
-        [ 'Apache',   'Lighttpd',  'Nginx_fcgi', ],
+        [ 'Apache',    'Lighttpd', 'Nginx', 'WinApache' ],
+        [ 'EngineCGI', 'EngineFastCGI', ],
     );
 }
 
@@ -56,14 +57,78 @@ sub skip {
     my ( $this, $test ) = @_;
 
     my %skip_tests = (
-'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_FullURLs_HTTPS_Nginx_fcgi'
-          => 'FCGI does not use script suffixes',
-'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_FullURLs_HTTP_Nginx_fcgi'
-          => 'FCGI does not use script suffixes',
-'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_FullURLs_HTTPS_Nginx_fcgi'
-          => 'FCGI does not use script suffixes',
-'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_FullURLs_HTTP_Nginx_fcgi'
-          => 'FCGI does not use script suffixes',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_FullURLs_HTTP_Nginx_EngineFastCGI'
+          => 'Nginx / FCGI does not support script suffixes',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_FullURLs_HTTP_Nginx_EngineFastCGI'
+          => 'Nginx / FCGI does not support script suffixes',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_FullURLs_HTTPS_Nginx_EngineFastCGI'
+          => 'Nginx / FCGI does not support script suffixes',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_FullURLs_HTTPS_Nginx_EngineFastCGI'
+          => 'Nginx / FCGI does not support script suffixes',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_ShortURLs_HTTP_Nginx_EngineFastCGI'
+          => 'Nginx / FCGI does not support script suffixes',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_ShortURLs_HTTP_Nginx_EngineFastCGI'
+          => 'Nginx / FCGI does not support script suffixes',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_ShortURLs_HTTPS_Nginx_EngineFastCGI'
+          => 'Nginx / FCGI does not support script suffixes',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_ShortURLs_HTTPS_Nginx_EngineFastCGI'
+          => 'Nginx / FCGI does not support script suffixes',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_MinimumURLs_HTTP_Nginx_EngineFastCGI'
+          => 'Nginx / FCGI does not support script suffixes',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_MinimumURLs_HTTP_Nginx_EngineFastCGI'
+          => 'Nginx / FCGI does not support script suffixes',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_MinimumURLs_HTTPS_Nginx_EngineFastCGI'
+          => 'Nginx / FCGI does not support script suffixes',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_MinimumURLs_HTTPS_Nginx_EngineFastCGI'
+          => 'Nginx / FCGI does not support script suffixes',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_FullURLs_HTTP_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_FullURLs_HTTP_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_FullURLs_HTTPS_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_FullURLs_HTTPS_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_ShortURLs_HTTP_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_ShortURLs_HTTP_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_ShortURLs_HTTPS_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_ShortURLs_HTTPS_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_MinimumURLs_HTTP_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_MinimumURLs_HTTP_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Suffix_MinimumURLs_HTTPS_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Suffix_MinimumURLs_HTTPS_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Nosuffix_FullURLs_HTTP_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Nosuffix_FullURLs_HTTP_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Nosuffix_FullURLs_HTTPS_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Nosuffix_FullURLs_HTTPS_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Nosuffix_ShortURLs_HTTP_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Nosuffix_ShortURLs_HTTP_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Nosuffix_ShortURLs_HTTPS_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Nosuffix_ShortURLs_HTTPS_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Nosuffix_MinimumURLs_HTTP_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Nosuffix_MinimumURLs_HTTP_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Test_Bootstrap_Nosuffix_MinimumURLs_HTTPS_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
+'TestBootstrapPluginTests::verify_Core_Bootstrap_Nosuffix_MinimumURLs_HTTPS_Nginx_EngineCGI'
+          => 'Nginx does not support plain CGI',
     );
 
     return $skip_tests{$test}
@@ -72,15 +137,54 @@ sub skip {
     return undef;
 }
 
+sub EngineCGI {
+    my $this = shift;
+    $this->{engine}    = 'Foswiki::Engine::CGI';
+    $this->{binscript} = 'view';
+    return;
+}
+
+sub EngineFastCGI {
+    my $this = shift;
+    $this->{engine}           = 'Foswiki::Engine::FastCGI';
+    $this->{binscript}        = 'foswiki.fcgi';
+    $this->{ENV}{SCRIPT_NAME} = $this->{prefix};
+    $this->{ENV}{REQUEST_URI} =
+      $this->{prefix} . $this->{script} . $this->{pathinfo};
+    $this->{ENV}{PATH_INFO} = '/view' . $this->{pathinfo};
+
+    return;
+}
+
+sub FullURLs {
+    my $this = shift;
+
+    $this->{url}    = "full";
+    $this->{host}   = "mysite.com";
+    $this->{prefix} = "/foswiki/bin";
+
+    #    $this->{script}   = $this->{prefix} . "/view" . $this->{suffix};
+    $this->{script}   = "/view";
+    $this->{testURL}  = "/foswiki/bin/view$this->{suffix}/Main/WebHome";
+    $this->{pathinfo} = "/Main/WebHome";
+    $this->{pubURL}   = "/foswiki/pub/System/Somefile.txt";
+
+    $this->{PubUrlPath}        = '/foswiki/bin/../pub';
+    $this->{ScriptUrlPath}     = '/foswiki/bin';
+    $this->{ViewScriptUrlPath} = '/foswiki/bin/view';
+
+    return;
+}
+
 sub ShortURLs {
     my $this = shift;
-    $this->{url}       = "short";
-    $this->{host}      = "mysite.com";
-    $this->{script}    = "/foswiki";
-    $this->{binscript} = 'view';
-    $this->{viewURL}   = "/foswiki/Main/WebHome";
-    $this->{pathinfo}  = "/Main/WebHome";
-    $this->{pubURL}    = "/foswiki/pub/System/Somefile.txt";
+    $this->{url}      = "short";
+    $this->{host}     = "mysite.com";
+    $this->{prefix}   = "/foswiki";
+    $this->{script}   = '';
+    $this->{testURL}  = "/foswiki/Main/WebHome";
+    $this->{pathinfo} = "/Main/WebHome";
+    $this->{pubURL}   = "/foswiki/pub/System/Somefile.txt";
 
     $this->{PubUrlPath}        = '/foswiki/pub';
     $this->{ScriptUrlPath}     = '/foswiki/bin';
@@ -93,9 +197,9 @@ sub MinimumURLs {
     my $this = shift;
     $this->{url}        = "minimum";
     $this->{host}       = "mysite.com";
-    $this->{viewURL}    = "/Main/WebHome";
-    $this->{script}     = "";
-    $this->{binscript}  = 'view';
+    $this->{testURL}    = "/Main/WebHome";
+    $this->{prefix}     = "";
+    $this->{script}     = $this->{prefix};
     $this->{pathinfo}   = "/Main/WebHome";
     $this->{pubURL}     = "/pub/System/Somefile.txt";
     $this->{PubUrlPath} = '/pub';
@@ -109,6 +213,7 @@ sub MinimumURLs {
 sub HTTP {
     my $this = shift;
     $this->{protocol} = "http://";
+    $this->{https}    = undef;
 
     return;
 }
@@ -116,6 +221,7 @@ sub HTTP {
 sub HTTPS {
     my $this = shift;
     $this->{protocol} = "https://";
+    $this->{https}    = 1;
 
     return;
 }
@@ -136,35 +242,18 @@ sub Nosuffix {
     return;
 }
 
-sub FullURLs {
-    my $this = shift;
-
-    $this->{url}       = "full";
-    $this->{host}      = "mysite.com";
-    $this->{script}    = "/foswiki/bin/view" . $this->{suffix};
-    $this->{binscript} = 'view';
-    $this->{viewURL}   = "/foswiki/bin/view$this->{suffix}/Main/WebHome";
-    $this->{pathinfo}  = "/Main/WebHome";
-    $this->{pubURL}    = "/foswiki/pub/System/Somefile.txt";
-
-    $this->{PubUrlPath}        = '/foswiki/bin/../pub';
-    $this->{ScriptUrlPath}     = '/foswiki/bin';
-    $this->{ViewScriptUrlPath} = '/foswiki/bin/view';
-
-    return;
-}
-
 sub Apache {
     my $this = shift;
 
     $this->{ENV} = {
         HTTP_HOST   => $this->{host},
-        PATH_INFO   => $this->{viewURL},
-        REQUEST_URI => $this->{viewURL},
-        SCRIPT_URI  => $this->{protocol} . $this->{host} . $this->{viewURL},
-        SCRIPT_URL  => $this->{viewURL},
+        PATH_INFO   => $this->{testURL},
+        REQUEST_URI => $this->{testURL},
+        SCRIPT_URI  => $this->{protocol} . $this->{host} . $this->{testURL},
+        SCRIPT_URL  => $this->{testURL},
         SCRIPT_NAME => $this->{script},
         PATH_INFO   => $this->{pathinfo},
+        HTTPS       => $this->{https},
     };
     return;
 }
@@ -174,30 +263,48 @@ sub Lighttpd {
 
     $this->{ENV} = {
         HTTP_HOST   => $this->{host},
-        PATH_INFO   => $this->{viewURL},
-        REQUEST_URI => $this->{viewURL},
-        SCRIPT_URI  => $this->{protocol} . $this->{host} . $this->{viewURL},
-        SCRIPT_URL  => $this->{viewURL},
+        PATH_INFO   => $this->{testURL},
+        REQUEST_URI => $this->{testURL},
+        SCRIPT_URI  => $this->{protocol} . $this->{host} . $this->{testURL},
+        SCRIPT_URL  => $this->{testURL},
         SCRIPT_NAME => '/bin/view',  # Script name is always present in Lighttpd
         PATH_INFO => $this->{pathinfo},
+        HTTPS     => $this->{https},
     };
 
     return;
 }
 
-sub Nginx_fcgi {
+sub Nginx {
     my $this = shift;
 
     $this->{ENV} = {
         HTTP_HOST   => $this->{host},
-        PATH_INFO   => $this->{viewURL},
-        REQUEST_URI => $this->{viewURL},
-        SCRIPT_URI  => $this->{protocol} . $this->{host} . $this->{viewURL},
-        SCRIPT_URL  => $this->{viewURL},
+        PATH_INFO   => $this->{testURL},
+        REQUEST_URI => $this->{testURL},
+        SCRIPT_URI  => $this->{protocol} . $this->{host} . $this->{testURL},
+        SCRIPT_URL  => $this->{testURL},
         SCRIPT_NAME => 'view',
         PATH_INFO   => $this->{pathinfo},
+        HTTPS       => $this->{https},
     };
-    $this->{binscript} = 'foswiki.fcgi';
+
+    return;
+}
+
+sub WinApache {
+    my $this = shift;
+
+    $this->{ENV} = {
+        HTTP_HOST   => $this->{host},
+        PATH_INFO   => $this->{testURL},
+        REQUEST_URI => $this->{testURL},
+        SCRIPT_URI  => $this->{protocol} . $this->{host} . $this->{testURL},
+        SCRIPT_URL  => $this->{testURL},
+        SCRIPT_NAME => '/foswiki/bin',
+        PATH_INFO   => $this->{pathinfo},
+        HTTPS       => $this->{https},
+    };
 
     return;
 }
@@ -208,31 +315,12 @@ sub verify_Test_Bootstrap {
     my $boot_cfg;
     my $resp;
 
-    {
-        local %ENV;
-        %ENV = %{ $this->{ENV} };
-
-        local *STDERR;
-        my $log;
-        open STDERR, '>', \$log;
-
-        ( $boot_cfg, $resp ) = $this->_runBootstrap(0);
-        close STDERR;
-        $msg .= $resp . "\n\n";
-        $msg .= $log;
-    }
+    ( $msg, $boot_cfg ) = $this->_runBootstrap(0);
 
     #print STDERR "BOOTSTRAP RETURNS:\n $msg\n";
     #print STDERR Data::Dumper::Dumper( \$boot_cfg );
 
-    $this->assert_str_equals( $this->{PubUrlPath}, $boot_cfg->{PubUrlPath} );
-    $this->assert_str_equals( $this->{ScriptUrlPath},
-        $boot_cfg->{ScriptUrlPath} );
-    my $suffix = ( $this->{url} eq 'full' ) ? $this->{suffix} : '';
-    $this->assert_str_equals(
-        $this->{ViewScriptUrlPath} . $suffix,
-        $boot_cfg->{ScriptUrlPaths}{view}
-    );
+    $this->_validate($boot_cfg);
 
     return;
 }
@@ -243,23 +331,18 @@ sub verify_Core_Bootstrap {
     my $boot_cfg;
     my $resp;
 
-    {
-        local %ENV;
-        %ENV = %{ $this->{ENV} };
-
-        local *STDERR;
-        my $log;
-        open STDERR, '>', \$log;
-
-        ( $boot_cfg, $resp ) = $this->_runBootstrap(1);
-        close STDERR;
-        $msg .= $resp . "\n\n";
-        $msg .= $log;
-    }
+    ( $msg, $boot_cfg ) = $this->_runBootstrap(1);
 
     #print STDERR "BOOTSTRAP RETURNS:\n $msg\n";
-
     #print STDERR Data::Dumper::Dumper( \$boot_cfg );
+
+    $this->_validate($boot_cfg);
+
+    return;
+}
+
+sub _validate {
+    my ( $this, $boot_cfg ) = @_;
 
     $this->assert_str_equals( $this->{PubUrlPath}, $boot_cfg->{PubUrlPath} );
     $this->assert_str_equals( $this->{ScriptUrlPath},
@@ -269,23 +352,115 @@ sub verify_Core_Bootstrap {
         $this->{ViewScriptUrlPath} . $suffix,
         $boot_cfg->{ScriptUrlPaths}{view}
     );
+}
+
+sub test_DefaultHostUrl {
+    my $this = shift;
+
+    $this->{binscript} = 'view';
+    $this->{engine}    = 'Foswiki::Engine::CGI';
+    $this->{suffix}    = '';
+    $this->{ENV}       = {
+        HTTP_HOST   => 'foobar.com',
+        REQUEST_URI => '',
+        SCRIPT_URL  => '',
+        PATH_INFO   => '',
+    };
+
+    my $msg;
+    my $boot_cfg;
+    my $resp;
+
+    ( $msg, $boot_cfg ) = $this->_runBootstrap(0);
+
+    $this->assert_matches(
+qr{AUTOCONFIG: Set DefaultUrlHost http://foobar.com from HTTP_HOST foobar.com},
+        $msg
+    );
+    $this->assert_str_equals( $boot_cfg->{DefaultUrlHost},
+        'http://foobar.com' );
+
+    $this->{ENV} = {
+        SERVER_NAME => 'foobar.com',
+        REQUEST_URI => '',
+        SCRIPT_URL  => '',
+        PATH_INFO   => '',
+    };
+    $msg = '';
+
+    ( $msg, $boot_cfg ) = $this->_runBootstrap(0);
+
+    $this->assert_matches(
+        qr{AUTOCONFIG: Set DefaultUrlHost http://foobar.com from SERVER_NAME},
+        $msg );
+    $this->assert_str_equals( $boot_cfg->{DefaultUrlHost},
+        'http://foobar.com' );
+
+    $this->{ENV} = {
+        SCRIPT_URI  => 'https://foobar.com/foswiki/bin/view/Main/WebHome',
+        REQUEST_URI => '',
+        SCRIPT_URL  => '',
+        PATH_INFO   => '',
+    };
+    $msg = '';
+
+    ( $msg, $boot_cfg ) = $this->_runBootstrap(0);
+
+    $this->assert_matches(
+        qr{AUTOCONFIG: Set DefaultUrlHost https://foobar.com from SCRIPT_URI},
+        $msg );
+    $this->assert_str_equals( $boot_cfg->{DefaultUrlHost},
+        'https://foobar.com' );
+
+    $this->{ENV} = {
+        SCRIPT_URI  => '',
+        REQUEST_URI => '',
+        SCRIPT_URL  => '',
+        PATH_INFO   => '',
+    };
+    $msg = '';
+
+    ( $msg, $boot_cfg ) = $this->_runBootstrap(0);
+
+    $this->assert_str_equals( $boot_cfg->{DefaultUrlHost}, 'http://localhost' );
 
     return;
 }
-sub _again { return; }
 
 sub _runBootstrap {
     my $this     = shift;
     my $coreTest = shift;
 
-    local %Foswiki::cfg = ( Engine => $Foswiki::cfg{Engine} );
+    local %ENV;
+    %ENV = %{ $this->{ENV} };
+
+    local *STDERR;
+    my $log;
+    open STDERR, '>', \$log;
+
+    my ( $boot_cfg, $resp ) = $this->_bootstrapConfig($coreTest);
+    close STDERR;
+    my $msg .= $resp . "\n\n";
+    $msg .= $log;
+
+    return ( $msg, $boot_cfg );
+}
+
+# Overrides FindBin::again to prevent refreshing of the results.
+sub _again { return; }
+
+sub _bootstrapConfig {
+    my $this     = shift;
+    my $coreTest = shift;
+
+    local %Foswiki::cfg = ( Engine => $this->{engine} );
     my $msg;
 
     no warnings 'redefine';
     require FindBin;
     *FindBin::again = \&_again;
     use warnings 'redefine';
-    $FindBin::Bin    = $this->{rootdir} . '/bin';
+    $FindBin::Bin    = $this->{rootdir} . 'bin';
     $FindBin::Script = $this->{binscript} . $this->{suffix};
 
     if ( $coreTest && Foswiki::Configure::Load->can('bootstrapConfig') ) {
@@ -297,7 +472,7 @@ sub _runBootstrap {
 
     $msg .= "\n\n";
     foreach my $ek ( sort keys %ENV ) {
-        $msg .= "\$ENV{$ek} = $ENV{$ek} \n";
+        $msg .= "\$ENV{$ek} = $ENV{$ek} \n" if ( defined $ENV{$ek} );
     }
 
     return ( \%Foswiki::cfg, $msg );
