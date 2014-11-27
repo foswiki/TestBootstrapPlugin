@@ -33,7 +33,9 @@ our %boot_cfg;
 
 my @BOOTSTRAP =
   qw( {DataDir} {DefaultUrlHost} {PubUrlPath} {ToolsDir} {WorkingDir}
-  {PubDir} {TemplateDir} {ScriptDir} {ScriptUrlPath} {ScriptUrlPaths}{view} {ScriptSuffix} {LocalesDir} );
+  {PubDir} {TemplateDir} {ScriptDir} {ScriptUrlPath} {ScriptUrlPaths}{view}
+  {ScriptSuffix} {LocalesDir} {Store}{Implementation}
+  {Store}{SearchAlgorithm} {_grepProgram} );
 
 sub initPlugin {
     my ( $topic, $web, $user, $installWeb ) = @_;
@@ -78,45 +80,21 @@ sub _BOOTSTRAP {
     $msg .= "</verbatim>\n\n<noautolink>\n";
     $msg .= "| *Key* | *Current* | *Bootstrap* |\n";
 
-    foreach my $key ( sort keys %$boot_cfg ) {
-        next if ( $key eq 'BOOTSTRAP' );
+    foreach my $key ( sort @BOOTSTRAP ) {
+        my $cur;
+        my $bs;
 
-        # SMELL: Not very pretty
-        if ( ref( $boot_cfg->{$key} ) eq 'HASH' ) {
-            foreach my $k2 ( keys %{ $boot_cfg->{$key} } ) {
-                my $cur =
-                  ( defined $Foswiki::cfg{$key}{$k2} )
-                  ? $Foswiki::cfg{$key}{$k2}
-                  : '(undefined)';
-                $cur =
-                  ( length $Foswiki::cfg{$key}{$k2} )
-                  ? $Foswiki::cfg{$key}{$k2}
-                  : '(empty)';
-                my $boot =
-                  ( defined $boot_cfg->{$key}{$k2} )
-                  ? $boot_cfg->{$key}{$k2}
-                  : '(undefined)';
-                $boot =
-                  ( length $boot_cfg->{$key}{$k2} )
-                  ? $boot_cfg->{$key}{$k2}
-                  : '(empty)';
-                $msg .= "| ={$key}{$k2}= | =$cur= | =$boot= |\n";
-            }
-            next;
-        }
-        else {
-            my $cur =
-              ( defined $Foswiki::cfg{$key} )
-              ? $Foswiki::cfg{$key}
-              : '(undefined)';
-            $cur =
-              ( length $Foswiki::cfg{$key} ) ? $Foswiki::cfg{$key} : '(empty)';
-            my $boot =
-              ( defined $boot_cfg->{$key} ) ? $boot_cfg->{$key} : '(undefined)';
-            $boot =
-              ( length $boot_cfg->{$key} ) ? $boot_cfg->{$key} : '(empty)';
-            $msg .= "| =$key= | =$cur= | =$boot= |\n";
-        }
+        print STDERR "\$cur=\$Foswiki::cfg$key=~/^(.*)\$/\n";
+
+        eval("\$cur=\$Foswiki::cfg$key");
+        print STDERR "CUR=$cur\n";
+        eval("\$bs=\$boot_cfg->$key");
+
+        $cur = '(undefined)' unless defined $cur;
+        $cur = '(empty)'     unless length $cur;
+        $bs  = '(undefined)' unless defined $bs;
+        $bs  = '(empty)'     unless length $bs;
+        $msg .= "| =$key= | =$cur= | =$bs= |\n";
     }
 
     return "$msg</noautolink></blockquote>\n";
@@ -128,31 +106,55 @@ sub _runBootstrap {
     my $msg;
 
     if ( Foswiki::Configure::Load->can('bootstrapConfig') ) {
-        $msg = Foswiki::Configure::Load::bootstrapConfig(1);
+        $msg = Foswiki::Configure::Load::bootstrapConfig();
     }
     else {
-        $msg = _bootstrapConfig(1);
+        $msg = bootstrapConfig();
     }
 
     return ( \%Foswiki::cfg, $msg );
+}
+
+#================ CUT / PASTE from Foswiki::Configure::Load =====================
+# After pasting in this code from Load.pm, be sure to comment out the line
+#   Foswiki::Configure::Load::readConfig( 0, 0, 1, 1);
+# found below.  Foswiki 1.1 does not have the 4th parameter (noLocal).
+#
+
+=begin TML
+
+---++ StaticMethod setBootstrap()
+
+This routine is called to initialize the bootstrap process.   It sets the list of
+configuration parameters that will need to be set and "protected" during bootstrap.
+
+If any keys will be set during bootstrap / initial creation of LocalSite.cfg, they
+should be added here so that they are preserved when the %Foswiki::cfg hash is
+wiped and re-initialized from the Foswiki spec.
+
+=cut
+
+sub setBootstrap {
+
+    # Bootstrap works out the correct values of these keys
+    my @BOOTSTRAP =
+      qw( {DataDir} {DefaultUrlHost} {PubUrlPath} {ToolsDir} {WorkingDir}
+      {PubDir} {TemplateDir} {ScriptDir} {ScriptUrlPath} {ScriptUrlPaths}{view} {ScriptSuffix} {LocalesDir} );
+
+    $Foswiki::cfg{isBOOTSTRAPPING} = 1;
+    push( @{ $Foswiki::cfg{BOOTSTRAP} }, @BOOTSTRAP );
 }
 
 =begin TML
 
 ---++ StaticMethod bootstrapConfig()
 
-This routine is a copy of the bootstrapConfig() that is shipped with version 1.2
-Foswiki::Configure::Load.  It is included here so that this plugin can also be used on a 1.1 system.
-
-When syncing over an updated version from Foswiki.pm:
-   * Delete the code that dies if ConfigurePlugin is not installed
-   * Also pull in _workOutOS if that has changed.
-   * Change the filename used to validate templates from configure.tmpl to foswiki.tmpl
+This routine is called from Foswiki.pm BEGIN block to discover the mandatory
+settings for operation when a LocalSite.cfg could not be found.
 
 =cut
 
-sub _bootstrapConfig {
-    my $noload = shift;
+sub bootstrapConfig {
 
     # Failed to read LocalSite.cfg
     # Clear out $Foswiki::cfg to allow variable expansion to work
@@ -185,6 +187,187 @@ sub _bootstrapConfig {
     print STDERR
       "AUTOCONFIG: Found SCRIPT SUFFIX $Foswiki::cfg{ScriptSuffix} \n"
       if ( TRAUTO && $Foswiki::cfg{ScriptSuffix} );
+
+    if ( defined $Foswiki::cfg{Engine}
+        && $Foswiki::cfg{Engine} ne 'Foswiki::Engine::CLI' )
+    {
+        _bootstrapWebSettings($script);
+    }
+
+    my %rel_to_root = (
+        DataDir    => { dir => 'data',   required => 0 },
+        LocalesDir => { dir => 'locale', required => 0 },
+        PubDir     => { dir => 'pub',    required => 0 },
+        ToolsDir   => { dir => 'tools',  required => 0 },
+        WorkingDir => {
+            dir           => 'working',
+            required      => 1,
+            validate_file => 'README'
+        },
+        TemplateDir => {
+            dir           => 'templates',
+            required      => 1,
+            validate_file => 'foswiki.tmpl'
+        },
+        ScriptDir => {
+            dir           => 'bin',
+            required      => 1,
+            validate_file => 'setlib.cfg'
+        }
+    );
+
+    # Note that we don't resolve x/../y to y, as this might
+    # confuse soft links
+    my $root = File::Spec->catdir( $bin, File::Spec->updir() );
+    $root =~ s{\\}{/}g;
+    my $fatal = '';
+    my $warn  = '';
+    while ( my ( $key, $def ) = each %rel_to_root ) {
+        $Foswiki::cfg{$key} = File::Spec->rel2abs( $def->{dir}, $root );
+        $Foswiki::cfg{$key} = abs_path( $Foswiki::cfg{$key} );
+        ( $Foswiki::cfg{$key} ) = $Foswiki::cfg{$key} =~ m/^(.*)$/;    # untaint
+
+        print STDERR "AUTOCONFIG: $key = $Foswiki::cfg{$key} \n"
+          if (TRAUTO);
+
+        if ( -d $Foswiki::cfg{$key} ) {
+            if ( $def->{validate_file}
+                && !-e "$Foswiki::cfg{$key}/$def->{validate_file}" )
+            {
+                $fatal .=
+"\n{$key} (guessed $Foswiki::cfg{$key}) $Foswiki::cfg{$key}/$def->{validate_file} not found";
+            }
+        }
+        elsif ( $def->{required} ) {
+            $fatal .= "\n{$key} (guessed $Foswiki::cfg{$key})";
+        }
+        else {
+            $warn .=
+              "\n      * Note: {$key} could not be guessed. Set it manually!";
+        }
+    }
+
+    # Bootstrap the store related settings.
+    _bootstrapStoreSettings();
+
+    if ($fatal) {
+        die <<EPITAPH;
+Unable to bootstrap configuration. LocalSite.cfg could not be loaded,
+and Foswiki was unable to guess the locations of the following critical
+directories: $fatal
+EPITAPH
+    }
+
+# Re-read Foswiki.spec *and Config.spec*. We need the Config.spec's
+# to get a true picture of our defaults (notably those from
+# JQueryPlugin. Without the Config.spec, no plugins get registered)
+# Don't load LocalSite.cfg if it exists (should normally not exist when bootstrapping)
+    Foswiki::Configure::Load::readConfig( 0, 0, 1, 1 );
+
+    _workOutOS();
+
+    $Foswiki::cfg{isVALID} = 1;
+    Foswiki::Configure::Load::setBootstrap();
+
+    # Note: message is not I18N'd because there is no point; there
+    # is no localisation in a default cfg derived from Foswiki.spec
+    my $vp = $Foswiki::cfg{ScriptUrlPaths}{view} || '';
+    my $system_message = <<BOOTS;
+ *WARNING !LocalSite.cfg could not be found, or failed to load.* %BR%This
+Foswiki is running using a bootstrap configuration worked
+out by detecting the layout of the installation. Any requests made to this
+Foswiki will be treated as requests made by an administrator with full rights
+to make changes! You should either:
+   * correct any permissions problems with an existing !LocalSite.cfg (see the webserver error logs for details), or
+   * visit [[%SCRIPTURL{configure}%?VIEWPATH=$vp][configure]] as soon as possible to generate a new one.
+BOOTS
+
+    if ($warn) {
+        chomp $system_message;
+        $system_message .= $warn . "\n";
+    }
+    return ( $system_message || '' );
+
+}
+
+=begin TML
+
+---++ StaticMethod _bootstrapStoreSettings()
+
+Called by bootstrapConfig.  This handles the store specific settings.   This in turn
+tests each Store Contib to determine if it's capable of bootstrapping.
+
+=cut
+
+sub _bootstrapStoreSettings {
+
+    # Ask each installed store to bootstrap itself.
+
+    my @stores = Foswiki::Configure::FileUtil::findPackages(
+        'Foswiki::Contrib::*StoreContrib');
+
+    foreach my $store (@stores) {
+        eval("require $store");
+        print STDERR $@ if ($@);
+        unless ($@) {
+            my $ok;
+            eval('$ok = $store->can(\'bootstrapStore\')');
+            if ($@) {
+                print STDERR $@;
+            }
+            else {
+                $store->bootstrapStore() if ($ok);
+            }
+        }
+    }
+
+    # Handle the common store settings managed by Core.  Important ones
+    # guessed/checked here include:
+    #  - $Foswiki::cfg{Store}{SearchAlgorithm}
+
+    # Set PurePerl search on Windows, or FastCGI systems.
+    if ( ( $Foswiki::cfg{Engine} && $Foswiki::cfg{Engine} =~ m/FastCGI/ )
+        || $^O eq 'MSWin32' )
+    {
+        $Foswiki::cfg{Store}{SearchAlgorithm} =
+          'Foswiki::Store::SearchAlgorithms::PurePerl';
+        print STDERR
+"AUTOCONFIG: Detected FastCGI or MS Windows. {Store}{SearchAlgorithm} set to PurePerl\n";
+    }
+    else {
+        ( $ENV{PATH} ) = $ENV{PATH} =~ m/^(.*)$/
+          if defined $ENV{PATH};    # Untaint the path
+        `grep -V 2>&1`;
+        if ($!) {
+            print STDERR
+"AUTOCONFIG: Unable to find a valid 'grep' on the path. Forcing PurePerl search\n";
+            $Foswiki::cfg{Store}{SearchAlgorithm} =
+              'Foswiki::Store::SearchAlgorithms::PurePerl';
+        }
+        else {
+            $Foswiki::cfg{Store}{SearchAlgorithm} =
+              'Foswiki::Store::SearchAlgorithms::Forking';
+            print STDERR
+              "AUTOCONFIG: {Store}{SearchAlgorithm} set to Forking\n";
+        }
+    }
+}
+
+=begin TML
+
+---++ StaticMethod _bootstrapWebSettings($script)
+
+Called by bootstrapConfig.  This handles the web environment specific settings only:
+
+   * ={DefaultUrlHost}=
+   * ={ScriptUrlPath}=
+   * ={ScriptUrlPaths}{view}=
+   * ={PubUrlPath}=
+
+=cut
+
+sub _bootstrapWebSettings {
+    my $script = shift;
 
     my $protocol = $ENV{HTTPS} ? 'https' : 'http';
 
@@ -227,7 +410,8 @@ sub _bootstrapConfig {
 # and then recovers it.  When the jsonrpc script is called to save the configuration
 # it then has the VIEWPATH parameter available.  If "view" was never called during
 # configuration, then it will not be set correctly.
-    my $path_info = $ENV{PATH_INFO} || '';  # SMELL Sometimes PATH_INFO in undef
+    my $path_info = $ENV{'PATH_INFO'}
+      || '';    #SMELL Sometimes PATH_INFO appears to be undefined.
     print STDERR "AUTOCONFIG: REQUEST_URI is $ENV{REQUEST_URI} \n" if (TRAUTO);
     print STDERR "AUTOCONFIG: SCRIPT_URI  is "
       . ( $ENV{SCRIPT_URI} || '(undef)' ) . " \n"
@@ -309,7 +493,7 @@ sub _bootstrapConfig {
         $Foswiki::cfg{PubUrlPath} = "$1/../pub";
     }
     else {
-        print STDERR "AUTOCONFIG: Building Short URL paths using prefix \n"
+        print STDERR "AUTOCONFIG: Building Short URL paths using prefix $pfx \n"
           if (TRAUTO);
         $Foswiki::cfg{ScriptUrlPath}        = $pfx . '/bin';
         $Foswiki::cfg{ScriptUrlPaths}{view} = $pfx;
@@ -328,96 +512,6 @@ sub _bootstrapConfig {
         print STDERR
           "AUTOCONFIG: Using PubUrlPath: $Foswiki::cfg{PubUrlPath} \n";
     }
-
-    my %rel_to_root = (
-        DataDir    => { dir => 'data',   required => 0 },
-        LocalesDir => { dir => 'locale', required => 0 },
-        PubDir     => { dir => 'pub',    required => 0 },
-        ToolsDir   => { dir => 'tools',  required => 0 },
-        WorkingDir => {
-            dir           => 'working',
-            required      => 1,
-            validate_file => 'README'
-        },
-        TemplateDir => {
-            dir           => 'templates',
-            required      => 1,
-            validate_file => 'foswiki.tmpl'
-        },
-        ScriptDir => {
-            dir           => 'bin',
-            required      => 1,
-            validate_file => 'setlib.cfg'
-        }
-    );
-
-    # Note that we don't resolve x/../y to y, as this might
-    # confuse soft links
-    my $root = File::Spec->catdir( $bin, File::Spec->updir() );
-    $root =~ s{\\}{/}g;
-    my $fatal = '';
-    my $warn  = '';
-    while ( my ( $key, $def ) = each %rel_to_root ) {
-        $Foswiki::cfg{$key} = File::Spec->rel2abs( $def->{dir}, $root );
-        $Foswiki::cfg{$key} = abs_path( $Foswiki::cfg{$key} );
-        ( $Foswiki::cfg{$key} ) = $Foswiki::cfg{$key} =~ m/^(.*)$/;    # untaint
-
-        print STDERR "AUTOCONFIG: $key = $Foswiki::cfg{$key} \n"
-          if (TRAUTO);
-
-        if ( -d $Foswiki::cfg{$key} ) {
-            if ( $def->{validate_file}
-                && !-e "$Foswiki::cfg{$key}/$def->{validate_file}" )
-            {
-                $fatal .=
-"\n{$key} (guessed $Foswiki::cfg{$key}) $Foswiki::cfg{$key}/$def->{validate_file} not found";
-            }
-        }
-        elsif ( $def->{required} ) {
-            $fatal .= "\n{$key} (guessed $Foswiki::cfg{$key})";
-        }
-        else {
-            $warn .=
-              "\n      * Note: {$key} could not be guessed. Set it manually!";
-        }
-    }
-    if ($fatal) {
-        die <<EPITAPH;
-Unable to bootstrap configuration. LocalSite.cfg could not be loaded,
-and Foswiki was unable to guess the locations of the following critical
-directories: $fatal
-EPITAPH
-    }
-
-    # Re-read Foswiki.spec *and Config.spec*. We need the Config.spec's
-    # to get a true picture of our defaults (notably those from
-    # JQueryPlugin. Without the Config.spec, no plugins get registered)
-    Foswiki::Configure::Load::readConfig( 0, 0, 1 ) unless ($noload);
-
-    _workOutOS();
-
-    $Foswiki::cfg{isVALID}         = 1;
-    $Foswiki::cfg{isBOOTSTRAPPING} = 1;
-    push( @{ $Foswiki::cfg{BOOTSTRAP} }, @BOOTSTRAP );
-
-    # Note: message is not I18N'd because there is no point; there
-    # is no localisation in a default cfg derived from Foswiki.spec
-    my $system_message = <<BOOTS;
- *WARNING !LocalSite.cfg could not be found, or failed to load.* %BR%This
-Foswiki is running using a bootstrap configuration worked
-out by detecting the layout of the installation. Any requests made to this
-Foswiki will be treated as requests made by an administrator with full rights
-to make changes! You should either:
-   * correct any permissions problems with an existing !LocalSite.cfg (see the webserver error logs for details), or
-   * visit [[%SCRIPTURL{configure}%?VIEWPATH=$Foswiki::cfg{ScriptUrlPaths}{view}][configure]] as soon as possible to generate a new one.
-BOOTS
-
-    if ($warn) {
-        chomp $system_message;
-        $system_message .= $warn . "\n";
-    }
-    return ( $system_message || '' );
-
 }
 
 sub _workOutOS {

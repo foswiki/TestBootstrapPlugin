@@ -464,10 +464,10 @@ sub _bootstrapConfig {
     $FindBin::Script = $this->{binscript} . $this->{suffix};
 
     if ( $coreTest && Foswiki::Configure::Load->can('bootstrapConfig') ) {
-        $msg = Foswiki::Configure::Load::bootstrapConfig(1);
+        $msg = Foswiki::Configure::Load::bootstrapConfig();
     }
     else {
-        $msg = Foswiki::Plugins::TestBootstrapPlugin::_bootstrapConfig(1);
+        $msg = Foswiki::Plugins::TestBootstrapPlugin::bootstrapConfig();
     }
 
     $msg .= "\n\n";
