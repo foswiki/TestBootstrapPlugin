@@ -35,7 +35,7 @@ my @BOOTSTRAP =
   qw( {DataDir} {DefaultUrlHost} {PubUrlPath} {ToolsDir} {WorkingDir}
   {PubDir} {TemplateDir} {ScriptDir} {ScriptUrlPath} {ScriptUrlPaths}{view}
   {ScriptSuffix} {LocalesDir} {Store}{Implementation}
-  {Store}{SearchAlgorithm} {_grepProgram} );
+  {Store}{SearchAlgorithm} );
 
 sub initPlugin {
     my ( $topic, $web, $user, $installWeb ) = @_;
@@ -139,7 +139,9 @@ sub setBootstrap {
     # Bootstrap works out the correct values of these keys
     my @BOOTSTRAP =
       qw( {DataDir} {DefaultUrlHost} {PubUrlPath} {ToolsDir} {WorkingDir}
-      {PubDir} {TemplateDir} {ScriptDir} {ScriptUrlPath} {ScriptUrlPaths}{view} {ScriptSuffix} {LocalesDir} );
+      {PubDir} {TemplateDir} {ScriptDir} {ScriptUrlPath} {ScriptUrlPaths}{view}
+      {ScriptSuffix} {LocalesDir} {Store}{Implementation}
+      {Store}{SearchAlgorithm} );
 
     $Foswiki::cfg{isBOOTSTRAPPING} = 1;
     push( @{ $Foswiki::cfg{BOOTSTRAP} }, @BOOTSTRAP );
@@ -262,7 +264,7 @@ EPITAPH
 # to get a true picture of our defaults (notably those from
 # JQueryPlugin. Without the Config.spec, no plugins get registered)
 # Don't load LocalSite.cfg if it exists (should normally not exist when bootstrapping)
-    Foswiki::Configure::Load::readConfig( 0, 0, 1, 1 );
+#Foswiki::Configure::Load::readConfig( 0, 0, 1, 1 );
 
     _workOutOS();
 
@@ -335,20 +337,33 @@ sub _bootstrapStoreSettings {
 "AUTOCONFIG: Detected FastCGI or MS Windows. {Store}{SearchAlgorithm} set to PurePerl\n";
     }
     else {
-        ( $ENV{PATH} ) = $ENV{PATH} =~ m/^(.*)$/
-          if defined $ENV{PATH};    # Untaint the path
-        `grep -V 2>&1`;
-        if ($!) {
-            print STDERR
+        # SMELL: The fork to `grep goes into a loop in the unit tests
+        # Not sure why, for now just default to pure perl bootstrapping
+        # in the unit tests.
+        if ( !$Foswiki::inUnitTestMode ) {
+
+            # Untaint PATH so we can check for grep on the path
+            my $x = $ENV{PATH};
+            $x =~ /^(.*)$/;
+            $ENV{PATH} = $1;
+            `grep -V 2>&1`;
+            if ($!) {
+                print STDERR
 "AUTOCONFIG: Unable to find a valid 'grep' on the path. Forcing PurePerl search\n";
-            $Foswiki::cfg{Store}{SearchAlgorithm} =
-              'Foswiki::Store::SearchAlgorithms::PurePerl';
+                $Foswiki::cfg{Store}{SearchAlgorithm} =
+                  'Foswiki::Store::SearchAlgorithms::PurePerl';
+            }
+            else {
+                $Foswiki::cfg{Store}{SearchAlgorithm} =
+                  'Foswiki::Store::SearchAlgorithms::Forking';
+                print STDERR
+                  "AUTOCONFIG: {Store}{SearchAlgorithm} set to Forking\n";
+            }
+            $ENV{PATH} = $x;    # re-taint
         }
         else {
             $Foswiki::cfg{Store}{SearchAlgorithm} =
-              'Foswiki::Store::SearchAlgorithms::Forking';
-            print STDERR
-              "AUTOCONFIG: {Store}{SearchAlgorithm} set to Forking\n";
+              'Foswiki::Store::SearchAlgorithms::PurePerl';
         }
     }
 }
@@ -450,7 +465,8 @@ sub _bootstrapWebSettings {
     }
     else {
         my $suffix =
-          ( length( $ENV{SCRIPT_URL} ) < length($path_info) )
+          ( defined $ENV{SCRIPT_URL}
+              && length( $ENV{SCRIPT_URL} ) < length($path_info) )
           ? $ENV{SCRIPT_URL}
           : $path_info;
 
