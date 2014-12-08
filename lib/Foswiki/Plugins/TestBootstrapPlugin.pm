@@ -32,7 +32,7 @@ our $NO_PREFS_IN_TOPIC = 1;
 our %boot_cfg;
 
 my @BOOTSTRAP =
-  qw( {DataDir} {DefaultUrlHost} {PubUrlPath} {ToolsDir} {WorkingDir}
+  qw( {DataDir} {DefaultUrlHost} {DetailedOS} {OS} {PubUrlPath} {ToolsDir} {WorkingDir}
   {PubDir} {TemplateDir} {ScriptDir} {ScriptUrlPath} {ScriptUrlPaths}{view}
   {ScriptSuffix} {LocalesDir} {Store}{Implementation}
   {Store}{SearchAlgorithm} );
@@ -138,7 +138,7 @@ sub setBootstrap {
 
     # Bootstrap works out the correct values of these keys
     my @BOOTSTRAP =
-      qw( {DataDir} {DefaultUrlHost} {PubUrlPath} {ToolsDir} {WorkingDir}
+      qw( {DataDir} {DefaultUrlHost} {DetailedOS} {OS} {PubUrlPath} {ToolsDir} {WorkingDir}
       {PubDir} {TemplateDir} {ScriptDir} {ScriptUrlPath} {ScriptUrlPaths}{view}
       {ScriptSuffix} {LocalesDir} {Store}{Implementation}
       {Store}{SearchAlgorithm} );
@@ -267,6 +267,9 @@ EPITAPH
 #Foswiki::Configure::Load::readConfig( 0, 0, 1, 1 );
 
     _workOutOS();
+    print STDERR
+"AUTOCONFIG: Detected OS $Foswiki::cfg{OS}:  DetailedOS: $Foswiki::cfg{DetailedOS} \n"
+      if (TRAUTO);
 
     $Foswiki::cfg{isVALID} = 1;
     Foswiki::Configure::Load::setBootstrap();
