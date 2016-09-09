@@ -317,8 +317,8 @@ sub verify_Test_Bootstrap {
 
     ( $msg, $boot_cfg ) = $this->_runBootstrap(0);
 
-    #print STDERR "BOOTSTRAP RETURNS:\n $msg\n";
-    #print STDERR Data::Dumper::Dumper( \$boot_cfg );
+    print STDERR "BOOTSTRAP RETURNS:\n $msg\n";
+    print STDERR Data::Dumper::Dumper( \$boot_cfg );
 
     $this->_validate($boot_cfg);
 
@@ -463,11 +463,22 @@ sub _bootstrapConfig {
     $FindBin::Bin    = $this->{rootdir} . 'bin';
     $FindBin::Script = $this->{binscript} . $this->{suffix};
 
+    require Foswiki::Configure::Bootstrap;
+
     if ( $coreTest && Foswiki::Configure::Load->can('bootstrapConfig') ) {
         $msg = Foswiki::Configure::Load::bootstrapConfig();
+        $msg .= Foswiki::Configure::Load::bootstrapWebSettings('view');
+    }
+    elsif ( $coreTest && Foswiki::Configure::Bootstrap->can('bootstrapConfig') )
+    {
+        $msg = Foswiki::Configure::Bootstrap::bootstrapConfig();
+        $msg .= Foswiki::Configure::Bootstrap::bootstrapWebSettings('view');
     }
     else {
-        $msg = Foswiki::Plugins::TestBootstrapPlugin::bootstrapConfig();
+        require Foswiki::Plugins::TestBootstrapPlugin::Bootstrap;
+        $msg =
+          Foswiki::Plugins::TestBootstrapPlugin::Bootstrap::bootstrapConfig();
+        $msg .= Foswiki::Configure::Bootstrap::bootstrapWebSettings('view');
     }
 
     $msg .= "\n\n";

@@ -1,4 +1,4 @@
-%META:TOPICINFO{author="ProjectContributor" date="1415232596" format="1.1" version="1"}%
+%META:TOPICINFO{author="ProjectContributor" date="1473391747" format="1.1" version="1"}%
 %META:TOPICPARENT{name="Plugins"}%
 <!--
    * Set SHORTDESCRIPTION = %$SHORTDESCRIPTION%
@@ -34,7 +34,9 @@ including hostnames, file system paths and IP addresses.
 report and send it to foswiki-security@lists.sourceforge.net   The Security
 email list has a very limited distribution.
 
+<dirtyarea>
 %BOOTSTRAP%
+</dirtyarea>
 
 ---++ Installation
 %$INSTALL_INSTRUCTIONS%
