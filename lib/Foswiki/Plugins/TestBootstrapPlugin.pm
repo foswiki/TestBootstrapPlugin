@@ -20,9 +20,9 @@ use File::Basename;
 
 use constant TRAUTO => 1;
 
-our $VERSION = '1.0';
+our $VERSION = '1.1';
 
-our $RELEASE = '04 Sep 2014';
+our $RELEASE = '09 Sep 2016';
 
 # One line description of the module
 our $SHORTDESCRIPTION = 'Test foswiki bootstrap code';
@@ -105,9 +105,12 @@ sub _BOOTSTRAP {
 
 sub _runBootstrap {
     local %Foswiki::cfg = ( Engine => $Foswiki::cfg{Engine} );
-    require Foswiki::Configure::Bootstrap;
-    my $msg = Foswiki::Configure::Bootstrap::bootstrapConfig();
-    $msg .= Foswiki::Configure::Bootstrap::bootstrapWebSettings('view');
+    require Foswiki::Plugins::TestBootstrapPlugin::Bootstrap;
+    my $msg =
+      Foswiki::Plugins::TestBootstrapPlugin::Bootstrap::bootstrapConfig();
+    $msg .=
+      Foswiki::Plugins::TestBootstrapPlugin::Bootstrap::bootstrapWebSettings(
+        'view');
 
     return ( \%Foswiki::cfg, $msg );
 }

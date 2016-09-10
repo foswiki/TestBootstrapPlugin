@@ -385,8 +385,12 @@ sub _bootstrapStoreSettings {
     # Detect the NFC / NDF normalization of the file system, and set
     # NFCNormalizeFilenames if needed.
     # SMELL: Really this should be done per web, both in data and pub.
-    my $nfcok =
-      Foswiki::Configure::FileUtil::canNfcFilenames( $Foswiki::cfg{DataDir} );
+    my $nfcok;
+    if ( Foswiki::Configure::FileUtil->can('canNfcFilenames') ) {
+        $nfcok =
+          Foswiki::Configure::FileUtil::canNfcFilenames(
+            $Foswiki::cfg{DataDir} );
+    }
     if ( defined $nfcok && $nfcok == 1 ) {
         print STDERR "AUTOCONFIG: Data Storage allows NFC filenames\n"
           if (TRAUTO);
@@ -557,7 +561,14 @@ sub bootstrapWebSettings {
 
         # This might not work, depending on the websrver config,
         # but it's the best we can do
-        $Foswiki::cfg{PubUrlPath} = "$1/../pub";
+        my $lslash = rindex( $1, '/' );
+        if ( $lslash >= 0 ) {
+            $Foswiki::cfg{PubUrlPath} = $1;
+            substr( $Foswiki::cfg{PubUrlPath}, $lslash + 1 ) = 'pub';
+        }
+        else {
+            $Foswiki::cfg{PubUrlPath} = "$1/../pub";
+        }
     }
     else {
         print STDERR "AUTOCONFIG: Building Short URL paths using prefix $pfx \n"

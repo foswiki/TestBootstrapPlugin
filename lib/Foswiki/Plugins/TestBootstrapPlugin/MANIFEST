@@ -1,4 +1,5 @@
 !noci
 data/System/TestBootstrapPlugin.txt 0644 Documentation page
 lib/Foswiki/Plugins/TestBootstrapPlugin.pm 0444 Perl module
+lib/Foswiki/Plugins/TestBootstrapPlugin/Bootstrap.pm 0444 Perl module
 
