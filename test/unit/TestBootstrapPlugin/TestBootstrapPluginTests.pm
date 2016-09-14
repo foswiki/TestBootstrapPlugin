@@ -151,7 +151,7 @@ sub EngineFastCGI {
     $this->{ENV}{SCRIPT_NAME} = $this->{prefix};
     $this->{ENV}{REQUEST_URI} =
       $this->{prefix} . $this->{script} . $this->{pathinfo};
-    $this->{ENV}{PATH_INFO} = '/view' . $this->{pathinfo};
+    $this->{ENV}{PATH_INFO} = $this->{pathinfo};
 
     return;
 }
@@ -169,7 +169,7 @@ sub FullURLs {
     $this->{pathinfo} = "/Main/WebHome";
     $this->{pubURL}   = "/foswiki/pub/System/Somefile.txt";
 
-    $this->{PubUrlPath}        = '/foswiki/bin/../pub';
+    $this->{PubUrlPath}        = '/foswiki/pub';
     $this->{ScriptUrlPath}     = '/foswiki/bin';
     $this->{ViewScriptUrlPath} = '/foswiki/bin/view';
 
@@ -317,8 +317,8 @@ sub verify_Test_Bootstrap {
 
     ( $msg, $boot_cfg ) = $this->_runBootstrap(0);
 
-    print STDERR "BOOTSTRAP RETURNS:\n $msg\n";
-    print STDERR Data::Dumper::Dumper( \$boot_cfg );
+    #print STDERR "BOOTSTRAP RETURNS:\n $msg\n";
+    #print STDERR Data::Dumper::Dumper( \$boot_cfg );
 
     $this->_validate($boot_cfg);
 
